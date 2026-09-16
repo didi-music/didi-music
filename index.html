@@ -1,1 +1,1509 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Didi-Music — Musique électronique</title>
+<meta name="description" content="Site officiel de Didi-Music, musique électronique digitale. Titres, sorties, bio et contact.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================
+   0. RESET & TOKENS
+   ============================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+:root{
+  --bg:            #0a0a0c;
+  --bg-alt:        #111116;
+  --bg-raised:     #16171c;
+  --text:          #f2f1ee;
+  --text-mute:     #9a9da6;
+  --text-faint:    #64676f;
+  --accent:        #7f9aa8;
+  --accent-dim:    rgba(127,154,168,0.14);
+  --border:        rgba(242,241,238,0.09);
+  --border-strong: rgba(242,241,238,0.20);
+
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body:    'Inter', sans-serif;
+
+  --container: 1120px;
+  --nav-h: 76px;
+
+  --ease:    cubic-bezier(.22,1,.36,1);
+  --ease-io: cubic-bezier(.65,0,.35,1);
+}
+
+/* Kill-switch piloté par le bouton FX (et non plus par l'OS) */
+html.no-anim *, html.no-anim *::before, html.no-anim *::after{
+  animation-duration: .01ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+  transition-delay: 0s !important;
+}
+html.no-anim{ scroll-behavior: auto; }
+
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+img { max-width: 100%; display: block; }
+
+::selection{ background: var(--accent-dim); color: var(--text); }
+:focus-visible{ outline: 2px solid var(--accent); outline-offset: 3px; }
+
+::-webkit-scrollbar{ width: 10px; }
+::-webkit-scrollbar-track{ background: var(--bg); }
+::-webkit-scrollbar-thumb{ background: #2a2c33; border: 2px solid var(--bg); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover{ background: #3a3d46; }
+
+/* Grain de texture par-dessus tout */
+body::after{
+  content:""; position:fixed; inset:0; z-index:9990; pointer-events:none; opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+.container{ max-width: var(--container); margin: 0 auto; padding: 0 32px; }
+section{ scroll-margin-top: var(--nav-h); }
+
+/* ============================================
+   1. PRÉCHARGEUR
+   Cache auto en CSS même si le JS plante,
+   invisible si JS désactivé.
+   ============================================ */
+.preloader{
+  position: fixed; inset: 0; z-index: 10001;
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+  transition: opacity .5s ease, visibility .5s ease;
+}
+html:not(.js) .preloader{ display: none; }
+html.js .preloader{ animation: preAuto .45s ease 3.4s forwards; }
+@keyframes preAuto{ to{ opacity:0; visibility:hidden; } }
+body.is-loaded .preloader{ opacity: 0; visibility: hidden; }
+.preloader-logo{ font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; }
+.preloader-logo .dot{ color: var(--accent); }
+.preloader-bars{ display: flex; gap: 5px; align-items: center; height: 26px; }
+.preloader-bars span{ width: 3px; height: 100%; background: var(--accent); animation: preBar 1s var(--ease-io) infinite; }
+.preloader-bars span:nth-child(1){ animation-delay: 0s; }
+.preloader-bars span:nth-child(2){ animation-delay: .12s; }
+.preloader-bars span:nth-child(3){ animation-delay: .24s; }
+.preloader-bars span:nth-child(4){ animation-delay: .36s; }
+.preloader-bars span:nth-child(5){ animation-delay: .48s; }
+@keyframes preBar{ 0%,100%{ transform: scaleY(.15); } 50%{ transform: scaleY(1); } }
+
+/* ============================================
+   2. PROGRESSION + CURSEUR
+   ============================================ */
+.progress{
+  position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 300;
+  background: var(--accent); transform-origin: 0 50%; transform: scaleX(0);
+}
+.cursor, .cursor-dot{ position: fixed; top: 0; left: 0; z-index: 10000; pointer-events: none; display: none; }
+html.custom-cursor .cursor, html.custom-cursor .cursor-dot{ display: flex; }
+html.custom-cursor, html.custom-cursor a, html.custom-cursor button{ cursor: none; }
+.cursor{
+  width: 36px; height: 36px; border: 1px solid var(--border-strong); border-radius: 50%;
+  align-items: center; justify-content: center;
+  transition: width .3s var(--ease), height .3s var(--ease), background .3s ease, border-color .3s ease, opacity .3s ease;
+}
+.cursor.is-hover{ width: 54px; height: 54px; background: var(--accent-dim); border-color: var(--accent); }
+.cursor.is-label{ width: 76px; height: 76px; background: rgba(10,10,12,.75); border-color: var(--accent); backdrop-filter: blur(3px); }
+.cursor-label{
+  font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent); white-space: nowrap;
+}
+.cursor-dot{ width: 5px; height: 5px; border-radius: 50%; background: var(--text); }
+
+/* ============================================
+   3. NAVIGATION
+   ============================================ */
+.nav{
+  position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h); z-index: 200;
+  background: rgba(10,10,12,0.82);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  transition: transform .45s var(--ease);
+}
+.nav.nav--hidden{ transform: translateY(-105%); }
+.nav .container{ height: 100%; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo{ font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; }
+.nav-logo .dot{ color: var(--accent); }
+
+.nav-links{ display: flex; gap: 36px; list-style: none; margin: 0; padding: 0; }
+.nav-links a{
+  font-size: 0.92rem; color: var(--text-mute); position: relative; padding: 6px 0;
+  transition: color 0.25s ease;
+}
+.nav-links a:hover, .nav-links a.active{ color: var(--text); }
+.nav-links a::after{
+  content:""; position:absolute; left:0; right:100%; bottom:0; height:1px;
+  background: var(--accent); transition: right 0.25s ease;
+}
+.nav-links a:hover::after, .nav-links a.active::after{ right: 0; }
+
+.nav-right{ display:flex; align-items:center; gap: 14px; }
+
+/* Bouton FX : force ON/OFF les animations */
+.fx-toggle{
+  display:flex; align-items:center; gap:7px;
+  background:transparent; border:1px solid var(--border-strong); border-radius:3px;
+  color: var(--text-mute); font-size:.72rem; font-weight:600; letter-spacing:.08em;
+  padding:7px 11px; transition: color .2s ease, border-color .2s ease;
+}
+.fx-dot{ width:7px; height:7px; border-radius:50%; background: var(--accent); transition: opacity .2s ease; }
+.fx-toggle[aria-pressed="false"] .fx-dot{ opacity:.25; }
+.fx-toggle:hover{ color: var(--text); border-color: var(--text); }
+
+.lang-switch{ display: flex; border: 1px solid var(--border-strong); border-radius: 3px; overflow: hidden; }
+.lang-switch button{
+  background: transparent; border: none; color: var(--text-mute);
+  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.03em; padding: 7px 12px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.lang-switch button.active{ background: var(--text); color: var(--bg); }
+.lang-switch button:not(.active):hover{ color: var(--text); }
+
+.nav-toggle{ display: none; flex-direction: column; gap: 5px; background: none; border: none; padding: 6px; }
+.nav-toggle span{ width: 20px; height: 1px; background: var(--text); transition: transform 0.25s ease, opacity 0.25s ease; }
+.nav-toggle.open span:nth-child(1){ transform: translateY(6px) rotate(45deg); }
+.nav-toggle.open span:nth-child(2){ opacity: 0; }
+.nav-toggle.open span:nth-child(3){ transform: translateY(-6px) rotate(-45deg); }
+
+/* ============================================
+   4. HERO — 3D + étoiles
+   ============================================ */
+.hero{
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: calc(var(--nav-h) + 40px) 0 110px;
+  overflow: hidden;
+}
+/* Champ d'étoiles en CSS pur : bouge MÊME sans JavaScript */
+.hero-stars{
+  position:absolute; inset:-2%; z-index:0; pointer-events:none; opacity:.55;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 25%, rgba(242,241,238,.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 68% 18%, rgba(242,241,238,.4) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 42% 60%, rgba(127,154,168,.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 85% 70%, rgba(242,241,238,.35) 50%, transparent 51%);
+  background-size: 480px 480px;
+  background-repeat: repeat;
+  animation: starsDrift 60s linear infinite;
+}
+@keyframes starsDrift{ to{ background-position: -960px -480px; } }
+
+#terrain{ position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.hero-vignette{
+  position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background:
+    radial-gradient(120% 90% at 50% 0%, transparent 40%, rgba(10,10,12,.5) 100%),
+    linear-gradient(to bottom, rgba(10,10,12,.4), transparent 28%, transparent 62%, var(--bg) 97%);
+}
+.hero-inner{ position: relative; z-index: 3; max-width: 840px; will-change: transform, opacity; }
+
+.hero-eyebrow{
+  display: inline-flex; align-items: center; gap: 12px;
+  font-size: 0.82rem; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 24px;
+}
+.hero-eyebrow::before{ content:""; width: 32px; height: 1px; background: var(--accent); }
+
+.hero h1{ font-size: clamp(2.5rem, 6.4vw, 4.6rem); line-height: 1.05; margin-bottom: 28px; font-weight: 700; }
+.line{ display: block; overflow: hidden; padding-bottom: .1em; margin-bottom: -.1em; }
+.line-inner{ display: inline-block; }
+/* États cachés uniquement si le JS tourne (classe fx posée par le script) */
+html.fx .line-inner{ transform: translateY(115%); will-change: transform; }
+body.is-loaded .line-inner{ animation: lineUp 1s var(--ease) forwards; }
+body.is-loaded h1 .line:nth-child(2) .line-inner{ animation-delay: .12s; }
+@keyframes lineUp{ to{ transform: translateY(0); } }
+
+.reveal-hero{ }
+html.fx .reveal-hero{ opacity: 0; transform: translateY(16px); }
+body.is-loaded .reveal-hero{ animation: fadeUp .9s var(--ease) forwards; }
+body.is-loaded .hero-eyebrow.reveal-hero{ animation-delay: .32s; }
+body.is-loaded .hero .lead.reveal-hero{ animation-delay: .48s; }
+body.is-loaded .hero-actions.reveal-hero{ animation-delay: .62s; }
+@keyframes fadeUp{ to{ opacity: 1; transform: none; } }
+
+.hero .lead{ font-size: 1.1rem; color: var(--text-mute); max-width: 46ch; margin-bottom: 40px; }
+.hero-actions{ display: flex; gap: 16px; flex-wrap: wrap; }
+
+.hero-scroll{
+  position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%);
+  z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; color: var(--text-faint);
+}
+.hero-scroll-line{ position: relative; width: 1px; height: 44px; background: var(--border-strong); overflow: hidden; }
+.hero-scroll-line::after{
+  content:""; position: absolute; top: -14px; left: 0; width: 1px; height: 14px; background: var(--accent);
+  animation: scrollHint 2s var(--ease-io) infinite;
+}
+@keyframes scrollHint{ to{ transform: translateY(72px); } }
+
+/* Boutons */
+.btn{
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 24px; font-size: 0.92rem; font-weight: 500;
+  border: 1px solid var(--border-strong); border-radius: 2px;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform .3s var(--ease);
+}
+.btn-primary{ background: var(--text); color: var(--bg); border-color: var(--text); }
+.btn-primary:hover{ background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.btn-ghost{ background: transparent; color: var(--text); }
+.btn-ghost:hover{ border-color: var(--text); }
+.btn:disabled, .btn.is-disabled{ opacity: 0.4; pointer-events: none; }
+.magnetic{ will-change: transform; }
+
+/* ============================================
+   5. MARQUEE (CSS pur : bouge même sans JS)
+   ============================================ */
+.marquee{
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  background: var(--bg-alt); padding: 18px 0; overflow: hidden;
+}
+.marquee-track{ display: flex; width: max-content; animation: marquee 30s linear infinite; }
+.marquee:hover .marquee-track{ animation-play-state: paused; }
+.marquee-group{ display: flex; align-items: center; gap: 44px; padding-right: 44px; }
+.marquee-item{
+  font-family: var(--font-display); font-size: .92rem; font-weight: 500;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--text-mute); white-space: nowrap;
+}
+.marquee-item.is-accent{ color: var(--accent); }
+.marquee-sep{ color: var(--text-faint); font-size: .8rem; user-select: none; }
+@keyframes marquee{ to{ transform: translateX(-50%); } }
+
+/* ============================================
+   6. SECTIONS + REVEAL (états pilotés par html.fx)
+   ============================================ */
+.section{ padding: 120px 0; border-top: 1px solid var(--border); position: relative; }
+.section-head{ display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 56px; flex-wrap: wrap; }
+.section-tag{
+  display: flex; align-items: center; gap: 14px;
+  font-size: .78rem; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 18px;
+}
+.section-tag::before{ content:""; width: 36px; height: 1px; background: var(--accent); }
+.section-head h2{ font-size: clamp(1.8rem, 3.4vw, 2.4rem); }
+.section-head .lead{ color: var(--text-mute); max-width: 40ch; font-size: 0.98rem; }
+
+.reveal{ transition: opacity .9s var(--ease), transform .9s var(--ease); transition-delay: var(--d, 0s); }
+html.fx .reveal{ opacity: 0; transform: translateY(30px); }
+html.fx .reveal.reveal-left{ transform: translateX(-36px); }
+html.fx .reveal.reveal-scale{ transform: scale(.95); }
+html.fx .reveal.is-visible{ opacity: 1; transform: none; }
+
+/* Cartes 3D */
+.tilt{
+  transform-style: preserve-3d;
+  transform: perspective(1000px) translateY(var(--ty, 0px)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform .5s var(--ease), border-color .3s ease, box-shadow .4s ease;
+  will-change: transform; position: relative;
+}
+.tilt::after{
+  content:""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(560px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.06), transparent 42%);
+  opacity: 0; transition: opacity .35s ease;
+}
+.tilt:hover::after{ opacity: 1; }
+
+/* ============================================
+   7. TITRES
+   ============================================ */
+.tracks-grid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.track-card{ background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; }
+.track-card:hover{
+  --ty: -8px; border-color: var(--border-strong);
+  box-shadow: 0 30px 50px -28px rgba(0,0,0,.7);
+}
+.track-link{ display: block; transform-style: preserve-3d; }
+
+.track-art{
+  position: relative; aspect-ratio: 1; overflow: hidden;
+  border-radius: 5px 5px 0 0; background: var(--bg-alt);
+  transform: translateZ(34px);
+}
+.track-art img{ position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease); z-index: 1; }
+.track-card:hover .track-art img{ transform: scale(1.06); }
+
+/* Pochette de secours CSS (animée, fonctionne sans JS) */
+.art-fallback{
+  position: absolute; inset: 0; z-index: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  background: linear-gradient(160deg, #131419, #0d0e13 55%, #101218);
+}
+.af-num{
+  font-family: var(--font-display); font-size: 4.4rem; font-weight: 700; line-height: 1;
+  color: transparent; -webkit-text-stroke: 1px var(--border-strong); letter-spacing: .02em;
+}
+.af-word{
+  font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; line-height: 1.08;
+  letter-spacing: .08em; text-align: center; color: var(--text-mute); text-transform: uppercase;
+}
+.af-eq{ display: flex; gap: 4px; align-items: flex-end; height: 22px; }
+.af-eq i{ width: 3px; height: 100%; background: var(--accent); transform-origin: bottom; animation: eqBar 1.2s ease-in-out infinite; }
+.af-eq i:nth-child(1){ animation-delay: 0s; } .af-eq i:nth-child(2){ animation-delay: .15s; }
+.af-eq i:nth-child(3){ animation-delay: .3s; } .af-eq i:nth-child(4){ animation-delay: .45s; }
+.af-eq i:nth-child(5){ animation-delay: .6s; }
+@keyframes eqBar{ 0%,100%{ transform: scaleY(.25); } 50%{ transform: scaleY(1); } }
+
+.track-badge{
+  position: absolute; top: 14px; left: 14px; z-index: 3;
+  font-size: .7rem; font-weight: 500; letter-spacing: .06em;
+  padding: 5px 10px; border-radius: 2px;
+  background: rgba(10,10,12,.72); border: 1px solid var(--border-strong); color: var(--text-mute);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.track-badge.is-soon{ color: var(--accent); border-color: var(--accent); }
+
+.play-hint{ position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; pointer-events: none; }
+.play-hint span{
+  width: 58px; height: 58px; border-radius: 50%;
+  background: rgba(10,10,12,.6); border: 1px solid var(--accent); color: var(--text);
+  display: grid; place-items: center; font-size: .95rem; padding-left: 4px;
+  transform: scale(.55); opacity: 0;
+  transition: transform .4s var(--ease), opacity .4s ease;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.track-card:hover .play-hint span{ transform: scale(1); opacity: 1; }
+
+.track-meta{ padding: 22px; display: flex; flex-direction: column; gap: 10px; transform: translateZ(20px); }
+.tm-top{ display: flex; justify-content: space-between; align-items: center; }
+.track-num{ font-family: var(--font-display); font-variant-numeric: tabular-nums; color: var(--accent); font-size: .95rem; }
+
+.eq{ display: flex; gap: 3px; align-items: flex-end; height: 14px; opacity: 0; transition: opacity .3s ease; }
+.track-card:hover .eq{ opacity: 1; }
+.eq i{ width: 3px; height: 100%; background: var(--accent); transform-origin: bottom; animation: eqBar 1s ease-in-out infinite; }
+.eq i:nth-child(1){ animation-delay: 0s; } .eq i:nth-child(2){ animation-delay: .2s; }
+.eq i:nth-child(3){ animation-delay: .4s; } .eq i:nth-child(4){ animation-delay: .1s; }
+
+.track-title{ font-size: 1.25rem; font-weight: 600; }
+.track-cta{
+  font-size: .85rem; color: var(--text-mute);
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: color .25s ease, gap .25s ease;
+}
+.track-cta::after{ content:"→"; transition: transform .25s var(--ease); }
+.track-card:hover .track-cta{ color: var(--accent); gap: 12px; }
+.track-card:hover .track-cta::after{ transform: translateX(3px); }
+.track-card.is-soon .track-cta{ color: var(--text-faint); }
+.track-card.is-soon:hover .track-cta{ color: var(--text-faint); }
+
+/* ============================================
+   8. RELEASES
+   ============================================ */
+.release-card{
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px;
+  padding: 56px; display: grid; grid-template-columns: 380px 1fr; gap: 64px; align-items: center;
+}
+.release-card:hover{ --ty: -6px; border-color: var(--border-strong); box-shadow: 0 30px 50px -28px rgba(0,0,0,.7); }
+
+.release-visual{ position: relative; aspect-ratio: 1; transform: translateZ(34px); transform-style: preserve-3d; }
+.vinyl{
+  position: absolute; top: 5%; left: -13%; width: 84%; aspect-ratio: 1; border-radius: 50%;
+  background: repeating-radial-gradient(circle at 50% 50%, #0b0b0e 0 2px, #14151a 2px 4px);
+  border: 1px solid #000;
+  box-shadow: 0 24px 44px rgba(0,0,0,.55);
+  animation: spin 9s linear infinite paused;
+}
+.release-card:hover .vinyl{ animation-play-state: running; }
+.vinyl::after{ content:""; position: absolute; inset: 37%; border-radius: 50%; background: var(--accent-dim); border: 1px solid var(--accent); }
+.vinyl::before{ content:""; position: absolute; top: 50%; left: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--bg); z-index: 2; }
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+.sleeve{
+  position: absolute; top: 0; right: 0; width: 86%; aspect-ratio: 1;
+  overflow: hidden; border: 1px solid var(--border-strong); border-radius: 4px;
+  background: var(--bg-alt); transition: transform .5s var(--ease);
+  box-shadow: 0 24px 44px rgba(0,0,0,.45);
+}
+.release-card:hover .sleeve{ transform: translate(-10px, -10px); }
+.sleeve img{ position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+
+.release-badge{ display: inline-block; font-size: .76rem; color: var(--text-faint); border: 1px solid var(--border-strong); padding: 5px 11px; border-radius: 2px; margin-bottom: 18px; }
+.release-card h3{ font-size: 2rem; margin-bottom: 16px; }
+.release-card .release-desc{ color: var(--text-mute); max-width: 56ch; margin-bottom: 28px; }
+.release-actions{ display: flex; gap: 14px; flex-wrap: wrap; }
+
+/* ============================================
+   9. BIO + STATS
+   ============================================ */
+.bio-section{ overflow: hidden; }
+.bio-bg{
+  position: absolute; top: 4%; left: -2%; z-index: 0;
+  font-family: var(--font-display); font-weight: 700; line-height: 1;
+  font-size: clamp(8rem, 22vw, 19rem); letter-spacing: -.02em;
+  color: transparent; -webkit-text-stroke: 1px rgba(242,241,238,.05);
+  user-select: none; pointer-events: none; will-change: transform;
+}
+.bio-section .container{ position: relative; z-index: 1; }
+.bio-grid{ display: grid; grid-template-columns: 260px 1fr; gap: 60px; }
+.bio-grid h2{ font-size: clamp(1.8rem, 3.4vw, 2.4rem); }
+.bio-text p{ font-size: 1.08rem; color: var(--text-mute); max-width: 62ch; margin-bottom: 20px; }
+.bio-text p:last-child{ margin-bottom: 0; }
+
+.stats{
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 80px;
+}
+.stat{ background: var(--bg); padding: 30px 26px; display: flex; flex-direction: column; gap: 8px; }
+.stat-num{ font-family: var(--font-display); font-size: 2.6rem; font-weight: 600; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.stat-label{ font-size: .85rem; color: var(--text-mute); }
+
+/* ============================================
+   10. CONTACT
+   ============================================ */
+.badge-live{
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: .85rem; color: var(--text-mute);
+  border: 1px solid var(--border-strong); border-radius: 999px;
+  padding: 8px 16px; margin-bottom: 32px;
+}
+.badge-live-dot{ position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+.badge-live-dot::after{
+  content:""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 1px solid var(--accent); animation: pulse 2.2s ease-out infinite;
+}
+@keyframes pulse{ 0%{ transform: scale(.4); opacity: 1; } 100%{ transform: scale(1.7); opacity: 0; } }
+
+.contact-wrap{ display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 40px; }
+.contact-email{
+  font-family: var(--font-display); font-size: clamp(1.5rem, 4.4vw, 2.5rem);
+  word-break: break-word; position: relative; display: inline-block; padding-bottom: 8px;
+}
+.contact-email::after{
+  content:""; position: absolute; left: 0; bottom: 0; width: 100%; height: 1px; background: var(--accent);
+  transform: scaleX(0); transform-origin: right; transition: transform .55s var(--ease);
+}
+.contact-email:hover::after{ transform: scaleX(1); transform-origin: left; }
+.contact-actions{ display: flex; gap: 14px; flex-wrap: wrap; }
+.copy-feedback{ font-size: 0.82rem; color: var(--accent); margin-top: 10px; height: 1em; }
+
+/* ============================================
+   11. FOOTER
+   ============================================ */
+footer{ border-top: 1px solid var(--border); padding: 48px 0 0; overflow: hidden; position: relative; }
+.footer-inner{ display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding-bottom: 40px; }
+.footer-inner nav ul{ list-style: none; display: flex; gap: 24px; padding: 0; margin: 0; }
+.footer-inner nav a{ font-size: 0.85rem; color: var(--text-faint); transition: color 0.2s ease; }
+.footer-inner nav a:hover{ color: var(--text); }
+.footer-copy{ font-size: 0.8rem; color: var(--text-faint); }
+.footer-giant{
+  font-family: var(--font-display); font-weight: 700; text-align: center;
+  font-size: clamp(3.4rem, 13vw, 11rem); line-height: .78; letter-spacing: -.03em;
+  color: transparent; -webkit-text-stroke: 1px rgba(242,241,238,.07);
+  user-select: none; transform: translateY(20%);
+}
+
+/* ============================================
+   12. RETOUR EN HAUT
+   ============================================ */
+.to-top{
+  position: fixed; right: 24px; bottom: 24px; width: 52px; height: 52px; z-index: 250;
+  border-radius: 50%; border: none; background: rgba(10,10,12,.72);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: grid; place-items: center;
+  opacity: 0; visibility: hidden; transform: translateY(14px);
+  transition: opacity .4s var(--ease), visibility .4s, transform .4s var(--ease);
+}
+.to-top.is-visible{ opacity: 1; visibility: visible; transform: none; }
+.to-top svg{ position: absolute; inset: 0; transform: rotate(-90deg); }
+.tt-track{ fill: none; stroke: var(--border-strong); stroke-width: 1.5; }
+.tt-prog{ fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 150.8; stroke-dashoffset: 150.8; }
+.tt-arrow{ display: block; color: var(--text); font-size: 1rem; transition: transform .3s var(--ease); }
+.to-top:hover .tt-arrow{ transform: translateY(-2px); }
+
+/* ============================================
+   13. RESPONSIVE
+   ============================================ */
+@media (max-width: 980px){
+  .tracks-grid{ grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
+  .release-card{ grid-template-columns: 1fr; gap: 48px; padding: 40px; }
+  .release-visual{ max-width: 420px; margin: 0 auto; width: 100%; }
+  .stats{ grid-template-columns: repeat(2, 1fr); }
+  .bio-grid{ grid-template-columns: 1fr; gap: 24px; }
+}
+@media (max-width: 860px){
+  .nav-links{
+    position: absolute; top: var(--nav-h); left: 0; right: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    flex-direction: column; gap: 0; max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .nav-links.open{ max-height: 320px; }
+  .nav-links li{ width: 100%; }
+  .nav-links a{ display: block; padding: 18px 32px; border-bottom: 1px solid var(--border); }
+  .nav-links a::after{ display: none; }
+  .nav-toggle{ display: flex; }
+  .nav.nav--hidden{ transform: none; }
+}
+@media (max-width: 600px){
+  .container{ padding: 0 20px; }
+  .section{ padding: 80px 0; }
+  .release-card{ padding: 26px; }
+  .stats{ margin-top: 56px; }
+  .stat{ padding: 22px 18px; }
+  .stat-num{ font-size: 2rem; }
+  .hero-scroll{ display: none; }
+  .to-top{ right: 16px; bottom: 16px; }
+}
+@media (max-width: 420px){
+  .fx-toggle .fx-txt{ display: none; }
+  .fx-toggle{ padding: 7px 9px; }
+}
+</style>
+</head>
+<body>
+<!-- Drapeau "JS actif" posé immédiatement (fonctionne même si le gros script plante) -->
+<script>document.documentElement.classList.add('js');</script>
+
+<!-- Préchargeur -->
+<div class="preloader" aria-hidden="true">
+  <div class="preloader-logo">Didi<span class="dot">-</span>Music</div>
+  <div class="preloader-bars"><span></span><span></span><span></span><span></span><span></span></div>
+</div>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+<div class="cursor" id="cursor" aria-hidden="true"><span class="cursor-label" id="cursorLabel"></span></div>
+<div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
+
+<!-- ============================================
+     NAVIGATION
+     ============================================ -->
+<header class="nav" id="nav">
+  <div class="container">
+    <a href="#top" class="nav-logo">Didi<span class="dot">-</span>Music</a>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#tracks" data-i18n="nav.tracks">Titres</a></li>
+      <li><a href="#releases" data-i18n="nav.releases">Sorties</a></li>
+      <li><a href="#bio" data-i18n="nav.bio">Bio</a></li>
+      <li><a href="#contact" data-i18n="nav.contact">Contact</a></li>
+    </ul>
+
+    <div class="nav-right">
+      <button class="fx-toggle" id="fxToggle" type="button" aria-pressed="true" aria-label="Activer ou désactiver les animations" title="Animations">
+        <span class="fx-dot" aria-hidden="true"></span><span class="fx-txt">FX</span>
+      </button>
+      <div class="lang-switch" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" class="active" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============================================
+     HERO
+     ============================================ -->
+<section class="hero">
+  <div class="hero-stars" aria-hidden="true"></div>
+  <canvas id="terrain" aria-hidden="true"></canvas>
+  <div class="hero-vignette" aria-hidden="true"></div>
+
+  <div class="container hero-inner" id="heroContent">
+    <p class="hero-eyebrow reveal-hero" data-i18n="hero.eyebrow">Artiste électronique</p>
+    <h1>
+      <span class="line"><span class="line-inner" data-i18n="hero.title1">De l'erreur</span></span>
+      <span class="line"><span class="line-inner" style="color:var(--accent)" data-i18n="hero.title2">naît la musique.</span></span>
+    </h1>
+    <p class="lead reveal-hero" data-i18n="hero.lead">Didi-Music écrit une musique électronique faite de textures numériques, entre rigueur et accident contrôlé.</p>
+    <div class="hero-actions reveal-hero">
+      <a href="#tracks" class="btn btn-primary magnetic" data-i18n="hero.cta1">Écouter les titres</a>
+      <a href="#contact" class="btn btn-ghost magnetic" data-i18n="hero.cta2">Contact</a>
+    </div>
+  </div>
+
+  <div class="hero-scroll" aria-hidden="true">
+    <span data-i18n="hero.scroll">Défiler</span>
+    <span class="hero-scroll-line"></span>
+  </div>
+</section>
+
+<!-- ============================================
+     MARQUEE
+     ============================================ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <div class="marquee-group">
+      <span class="marquee-item is-accent">Didi-Music</span><span class="marquee-sep">///</span>
+      <span class="marquee-item">Didi-First</span><span class="marquee-sep">///</span>
+      <span class="marquee-item">404 Key Not Found</span><span class="marquee-sep">///</span>
+      <span class="marquee-item">404 Winter Not Found</span><span class="marquee-sep">///</span>
+      <span class="marquee-item">Burst Vinyl</span><span class="marquee-sep">///</span>
+      <span class="marquee-item is-accent" data-i18n="marquee.tag">Musique électronique</span><span class="marquee-sep">///</span>
+    </div>
+    <div class="marquee-group">
+      <span class="marquee-item is-accent">Didi-Music</span><span class="marquee-sep">///</span>
+      <span class="marquee-item">Didi-First</span><span class="marquee-sep">///</span>
+      <span class="marquee-item">404 Key Not Found</span><span class="marquee-sep">///</span>
+      <span class="marquee-item">404 Winter Not Found</span><span class="marquee-sep">///</span>
+      <span class="marquee-item">Burst Vinyl</span><span class="marquee-sep">///</span>
+      <span class="marquee-item is-accent" data-i18n="marquee.tag">Musique électronique</span><span class="marquee-sep">///</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     TITRES
+     ============================================ -->
+<section class="section" id="tracks">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <p class="section-tag">01</p>
+        <h2 data-i18n="tracks.title">Titres</h2>
+      </div>
+      <p class="lead" data-i18n="tracks.lead">Trois titres, un même geste : pousser le son jusqu'à la limite du signal.</p>
+    </div>
+
+    <div class="tracks-grid">
+      <!-- 01 — Didi-First. Si tu as une image didifirst.png, pose-la à côté du fichier HTML,
+           elle s'affichera automatiquement (sinon, visuel CSS animé de secours). -->
+      <article class="track-card tilt reveal" style="--d:.05s" data-tilt>
+        <a class="track-link" href="https://link.deezer.com/s/34pSwcmLzIhVPiTJIeFI8" target="_blank" rel="noopener noreferrer" aria-label="Didi-First — écouter sur Deezer">
+          <div class="track-art">
+            <img src="didifirst.png" alt="Pochette — Didi-First" loading="lazy" decoding="async" onerror="this.remove()">
+            <div class="art-fallback" aria-hidden="true">
+              <span class="af-num">01</span>
+              <span class="af-eq"><i></i><i></i><i></i><i></i><i></i></span>
+            </div>
+            <span class="track-badge" data-i18n="track.available">Disponible</span>
+            <span class="play-hint"><span>▶</span></span>
+          </div>
+          <div class="track-meta">
+            <div class="tm-top"><span class="track-num">01</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+            <h3 class="track-title">Didi-First</h3>
+            <span class="track-cta" data-i18n="track.listen">Écouter sur Deezer</span>
+          </div>
+        </a>
+      </article>
+
+      <!-- 02 — 404 Key Not Found -->
+      <article class="track-card tilt reveal" style="--d:.15s" data-tilt data-cursor-label="cursor.listen">
+        <a class="track-link" href="https://link.deezer.com/s/34pSxc1s1ezqb8ZQ8xFCb" target="_blank" rel="noopener noreferrer" aria-label="404 Key Not Found — écouter sur Deezer">
+          <div class="track-art">
+            <img src="404keynotfound.png" alt="Pochette — 404 Key Not Found" loading="lazy" decoding="async" onerror="this.remove()">
+            <div class="art-fallback" aria-hidden="true">
+              <span class="af-num">404</span>
+              <span class="af-eq"><i></i><i></i><i></i><i></i><i></i></span>
+            </div>
+            <span class="track-badge" data-i18n="track.available">Disponible</span>
+            <span class="play-hint"><span>▶</span></span>
+          </div>
+          <div class="track-meta">
+            <div class="tm-top"><span class="track-num">02</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+            <h3 class="track-title">404 Key Not Found</h3>
+            <span class="track-cta" data-i18n="track.listen">Écouter sur Deezer</span>
+          </div>
+        </a>
+      </article>
+
+      <!-- 03 — 404 Winter Not Found (à venir) -->
+      <article class="track-card tilt is-soon reveal" style="--d:.25s" data-tilt>
+        <div class="track-link">
+          <div class="track-art">
+            <img src="404winternotfound.png" alt="Pochette — 404 Winter Not Found" loading="lazy" decoding="async" onerror="this.remove()">
+            <div class="art-fallback" aria-hidden="true">
+              <span class="af-num">404</span>
+              <span class="af-eq"><i></i><i></i><i></i><i></i><i></i></span>
+            </div>
+            <span class="track-badge is-soon" data-i18n="track.soon">Bientôt disponible</span>
+          </div>
+          <div class="track-meta">
+            <div class="tm-top"><span class="track-num">03</span></div>
+            <h3 class="track-title">404 Winter Not Found</h3>
+            <span class="track-cta" data-i18n="track.soonShort">Bientôt</span>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     RELEASES
+     ============================================ -->
+<section class="section" id="releases">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <p class="section-tag">02</p>
+        <h2 data-i18n="releases.title">Sorties</h2>
+      </div>
+      <p class="lead" data-i18n="releases.lead">Un album collectif, pensé à plusieurs voix.</p>
+    </div>
+
+    <div class="release-card tilt reveal" data-tilt data-cursor-label="cursor.listen">
+      <div class="release-visual">
+        <div class="vinyl" aria-hidden="true"></div>
+        <div class="sleeve">
+          <img src="burstvinyl.png" alt="Pochette — Burst Vinyl" loading="lazy" decoding="async" onerror="this.remove()">
+          <div class="art-fallback" aria-hidden="true"><span class="af-word">Burst<br>Vinyl</span></div>
+        </div>
+      </div>
+      <div class="release-info">
+        <span class="release-badge" data-i18n="releases.badge">Album — 3 artistes</span>
+        <h3>Burst Vinyl</h3>
+        <p class="release-desc" data-i18n="releases.desc">Burst Vinyl réunit trois artistes autour d'un même disque, chacun apportant sa propre lecture de la musique électronique. Didi-Music y signe une contribution entre rigueur rythmique et textures abîmées.</p>
+        <div class="release-actions">
+          <a href="https://www.deezer.com/fr/album/1028129012" target="_blank" rel="noopener noreferrer" class="btn btn-primary magnetic" data-i18n="releases.cta1">Écouter l'album</a>
+          <a href="https://www.deezer.com/fr/artist/385104591" target="_blank" rel="noopener noreferrer" class="btn btn-ghost magnetic" data-i18n="releases.cta2">Voir la page artiste</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     BIO
+     ============================================ -->
+<section class="section bio-section" id="bio">
+  <div class="bio-bg" id="bioBg" aria-hidden="true">DIDI</div>
+  <div class="container">
+    <div class="bio-grid">
+      <div class="reveal">
+        <p class="section-tag">03</p>
+        <h2 data-i18n="bio.title">Bio</h2>
+      </div>
+      <div class="bio-text reveal" style="--d:.1s">
+        <p data-i18n="bio.p1">Didi-Music travaille la musique électronique comme un matériau brut : boucles cassées, silences calculés, textures numériques poussées jusqu'à l'erreur. Son premier titre, Didi-First, pose les bases d'un univers où le glitch devient mélodie. Avec 404 Key Not Found, le projet affine son écriture : rythmes fragmentés, nappes froides, urgence maîtrisée.</p>
+        <p data-i18n="bio.p2">Une suite, 404 Winter Not Found, est en préparation. Parallèlement, Didi-Music rejoint deux autres artistes sur Burst Vinyl, un album collectif pensé comme un dialogue entre trois univers sonores distincts. Le projet avance titre après titre, sans esbroufe, avec l'idée simple qu'une bonne piste doit d'abord tenir sur une seule écoute.</p>
+      </div>
+    </div>
+
+    <div class="stats reveal" style="--d:.15s">
+      <div class="stat"><span class="stat-num" data-count="3" data-pad="2">00</span><span class="stat-label" data-i18n="stats.tracks">titres au catalogue</span></div>
+      <div class="stat"><span class="stat-num" data-count="1" data-pad="2">00</span><span class="stat-label" data-i18n="stats.album">album collectif</span></div>
+      <div class="stat"><span class="stat-num" data-count="1" data-pad="2">00</span><span class="stat-label" data-i18n="stats.soon">en préparation</span></div>
+      <div class="stat"><span class="stat-num">∞</span><span class="stat-label" data-i18n="stats.errors">erreurs assumées</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     CONTACT
+     ============================================ -->
+<section class="section" id="contact">
+  <div class="container">
+    <div class="section-head reveal">
+      <div>
+        <p class="section-tag">04</p>
+        <h2 data-i18n="contact.title">Contact</h2>
+      </div>
+      <p class="lead" data-i18n="contact.lead">Pour bookings, remix, collaborations ou simplement dire bonjour.</p>
+    </div>
+
+    <div class="contact-wrap reveal">
+      <div>
+        <p class="badge-live"><span class="badge-live-dot" aria-hidden="true"></span><span data-i18n="contact.available">Disponible pour projets</span></p>
+        <p class="contact-email">14.didi.music@gmail.com</p>
+        <p class="copy-feedback" id="copyFeedback" aria-live="polite"></p>
+      </div>
+      <div class="contact-actions">
+        <button type="button" class="btn btn-ghost magnetic" id="copyBtn" data-i18n="contact.copy">Copier l'adresse</button>
+        <a href="mailto:14.didi.music@gmail.com" class="btn btn-primary magnetic" data-i18n="contact.mail">Écrire un email</a>
+        <a href="https://www.deezer.com/fr/artist/385104591" target="_blank" rel="noopener noreferrer" class="btn btn-ghost magnetic" data-i18n="contact.deezer">Écouter sur Deezer</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================================
+     FOOTER
+     ============================================ -->
+<footer>
+  <div class="container footer-inner">
+    <div class="nav-logo">Didi<span class="dot">-</span>Music</div>
+    <nav>
+      <ul>
+        <li><a href="#tracks" data-i18n="nav.tracks">Titres</a></li>
+        <li><a href="#releases" data-i18n="nav.releases">Sorties</a></li>
+        <li><a href="#bio" data-i18n="nav.bio">Bio</a></li>
+        <li><a href="#contact" data-i18n="nav.contact">Contact</a></li>
+      </ul>
+    </nav>
+    <p class="footer-copy" data-i18n="footer.copy">© 2026 Didi-Music. Tous droits réservés.</p>
+  </div>
+  <div class="footer-giant" aria-hidden="true">DIDI-MUSIC</div>
+</footer>
+
+<button class="to-top" id="toTop" aria-label="Retour en haut">
+  <svg viewBox="0 0 52 52" aria-hidden="true">
+    <circle class="tt-track" cx="26" cy="26" r="24"></circle>
+    <circle class="tt-prog" id="ttProg" cx="26" cy="26" r="24"></circle>
+  </svg>
+  <span class="tt-arrow">↑</span>
+</button>
+
+<script>
+'use strict';
+
+/* ============================================================
+   0. BOOTSTRAP — drapeau FX + sécurité par module
+   ============================================================ */
+document.documentElement.classList.add('fx');
+
+let fxPref = null;
+try { fxPref = localStorage.getItem('didi-music-fx'); } catch(e) {}
+const ANIM = (fxPref === null) ? true : (fxPref === 'on'); // animations ON par défaut
+const FINE = matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+if(!ANIM) document.documentElement.classList.add('no-anim');
+
+/* Chaque effet tourne dans sa bulle : une erreur n'kill plus le site */
+function safe(name, fn){
+  try { fn(); }
+  catch(err){ console.warn('Didi-Music — module « ' + name + ' » désactivé :', err); }
+}
+
+console.log(
+  '%c DIDI-MUSIC FX %c animations ' + (ANIM ? 'ON ✅' : 'OFF'),
+  'background:#7f9aa8;color:#0a0a0c;padding:2px 6px;font-weight:700;border-radius:2px;',
+  'color:#7f9aa8;font-weight:600'
+);
+
+/* Éléments partagés */
+const navEl       = document.getElementById('nav');
+const navLinksEl  = document.getElementById('navLinks');
+const navToggleEl = document.getElementById('navToggle');
+
+/* ============================================================
+   1. TRADUCTIONS
+   ============================================================ */
+const translations = {
+  fr: {
+    'nav.tracks': 'Titres', 'nav.releases': 'Sorties', 'nav.bio': 'Bio', 'nav.contact': 'Contact',
+
+    'hero.eyebrow': 'Artiste électronique',
+    'hero.title1': "De l'erreur",
+    'hero.title2': 'naît la musique.',
+    'hero.lead': "Didi-Music écrit une musique électronique faite de textures numériques, entre rigueur et accident contrôlé.",
+    'hero.cta1': 'Écouter les titres', 'hero.cta2': 'Contact', 'hero.scroll': 'Défiler',
+
+    'marquee.tag': 'Musique électronique',
+
+    'tracks.title': 'Titres',
+    'tracks.lead': "Trois titres, un même geste : pousser le son jusqu'à la limite du signal.",
+    'track.available': 'Disponible', 'track.soon': 'Bientôt disponible', 'track.soonShort': 'Bientôt',
+    'track.listen': 'Écouter sur Deezer',
+
+    'releases.title': 'Sorties', 'releases.lead': 'Un album collectif, pensé à plusieurs voix.',
+    'releases.badge': 'Album — 3 artistes',
+    'releases.desc': "Burst Vinyl réunit trois artistes autour d'un même disque, chacun apportant sa propre lecture de la musique électronique. Didi-Music y signe une contribution entre rigueur rythmique et textures abîmées.",
+    'releases.cta1': "Écouter l'album", 'releases.cta2': 'Voir la page artiste',
+
+    'bio.title': 'Bio',
+    'bio.p1': "Didi-Music travaille la musique électronique comme un matériau brut : boucles cassées, silences calculés, textures numériques poussées jusqu'à l'erreur. Son premier titre, Didi-First, pose les bases d'un univers où le glitch devient mélodie. Avec 404 Key Not Found, le projet affine son écriture : rythmes fragmentés, nappes froides, urgence maîtrisée.",
+    'bio.p2': "Une suite, 404 Winter Not Found, est en préparation. Parallèlement, Didi-Music rejoint deux autres artistes sur Burst Vinyl, un album collectif pensé comme un dialogue entre trois univers sonores distincts. Le projet avance titre après titre, sans esbroufe, avec l'idée simple qu'une bonne piste doit d'abord tenir sur une seule écoute.",
+
+    'stats.tracks': 'titres au catalogue', 'stats.album': 'album collectif',
+    'stats.soon': 'en préparation', 'stats.errors': 'erreurs assumées',
+
+    'contact.title': 'Contact', 'contact.lead': 'Pour bookings, remix, collaborations ou simplement dire bonjour.',
+    'contact.available': 'Disponible pour projets',
+    'contact.copy': "Copier l'adresse", 'contact.copied': 'Adresse copiée',
+    'contact.mail': 'Écrire un email', 'contact.deezer': 'Écouter sur Deezer',
+
+    'footer.copy': '© 2026 Didi-Music. Tous droits réservés.',
+    'cursor.listen': 'Écouter',
+    'fx.on':  'Animations activées — cliquer pour désactiver',
+    'fx.off': 'Animations désactivées — cliquer pour activer',
+    'meta.title': 'Didi-Music — Musique électronique'
+  },
+  en: {
+    'nav.tracks': 'Tracks', 'nav.releases': 'Releases', 'nav.bio': 'Bio', 'nav.contact': 'Contact',
+
+    'hero.eyebrow': 'Electronic artist',
+    'hero.title1': 'Music, born',
+    'hero.title2': 'from error.',
+    'hero.lead': 'Didi-Music writes electronic music built from digital textures, somewhere between precision and controlled accident.',
+    'hero.cta1': 'Listen to the tracks', 'hero.cta2': 'Contact', 'hero.scroll': 'Scroll',
+
+    'marquee.tag': 'Electronic music',
+
+    'tracks.title': 'Tracks',
+    'tracks.lead': 'Three tracks, one gesture: pushing sound to the edge of the signal.',
+    'track.available': 'Available', 'track.soon': 'Coming soon', 'track.soonShort': 'Soon',
+    'track.listen': 'Listen on Deezer',
+
+    'releases.title': 'Releases', 'releases.lead': 'A collective album, built with several voices.',
+    'releases.badge': 'Album — 3 artists',
+    'releases.desc': 'Burst Vinyl brings three artists together on one record, each bringing their own take on electronic music. Didi-Music contributes a track built on rhythmic precision and worn-out textures.',
+    'releases.cta1': 'Listen to the album', 'releases.cta2': 'View artist page',
+
+    'bio.title': 'Bio',
+    'bio.p1': 'Didi-Music treats electronic music as raw material: broken loops, calculated silences, digital textures pushed to the point of error. The first track, Didi-First, lays the groundwork for a world where the glitch becomes melody. With 404 Key Not Found, the project sharpens its writing: fragmented rhythms, cold pads, controlled urgency.',
+    'bio.p2': 'A follow-up, 404 Winter Not Found, is in the works. Alongside solo output, Didi-Music joins two other artists on Burst Vinyl, a collective album built as a dialogue between three distinct sonic worlds. The project moves forward track by track, with the simple idea that a good track should hold up on a single listen.',
+
+    'stats.tracks': 'tracks in catalogue', 'stats.album': 'collective album',
+    'stats.soon': 'in the works', 'stats.errors': 'errors embraced',
+
+    'contact.title': 'Contact', 'contact.lead': 'For bookings, remixes, collaborations, or just to say hello.',
+    'contact.available': 'Open for projects',
+    'contact.copy': 'Copy address', 'contact.copied': 'Address copied',
+    'contact.mail': 'Send an email', 'contact.deezer': 'Listen on Deezer',
+
+    'footer.copy': '© 2026 Didi-Music. All rights reserved.',
+    'cursor.listen': 'Listen',
+    'fx.on':  'Animations on — click to disable',
+    'fx.off': 'Animations off — click to enable',
+    'meta.title': 'Didi-Music — Electronic Music'
+  }
+};
+
+/* ============================================================
+   2. SWITCH DE LANGUE
+   ============================================================ */
+safe('langue', function(){
+  let currentLang = 'fr';
+  const langButtons = document.querySelectorAll('.lang-switch button');
+  const STORAGE_KEY = 'didi-music-lang';
+
+  function applyLanguage(lang){
+    const dict = translations[lang];
+    if(!dict) return;
+    currentLang = lang;
+
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      const key = el.getAttribute('data-i18n');
+      if(dict[key] !== undefined) el.textContent = dict[key];
+    });
+
+    const fxBtn = document.getElementById('fxToggle');
+    if(fxBtn) fxBtn.title = dict[ANIM ? 'fx.on' : 'fx.off'];
+
+    document.documentElement.lang = lang;
+    document.title = dict['meta.title'];
+
+    langButtons.forEach(function(btn){
+      const isActive = btn.dataset.lang === lang;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+
+    try { localStorage.setItem(STORAGE_KEY, lang); } catch(e) {}
+  }
+
+  langButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){ applyLanguage(btn.dataset.lang); });
+  });
+
+  (function init(){
+    let initial = 'fr';
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if(saved && translations[saved]) initial = saved;
+      else if(navigator.language && navigator.language.toLowerCase().indexOf('en') === 0) initial = 'en';
+    } catch(e) {}
+    applyLanguage(initial);
+  })();
+});
+
+/* ============================================================
+   3. BOUTON FX (force les animations ON/OFF)
+   ============================================================ */
+safe('bouton FX', function(){
+  const fxBtn = document.getElementById('fxToggle');
+  if(!fxBtn) return;
+  fxBtn.setAttribute('aria-pressed', String(ANIM));
+  fxBtn.addEventListener('click', function(){
+    try { localStorage.setItem('didi-music-fx', ANIM ? 'off' : 'on'); } catch(e) {}
+    location.reload();
+  });
+});
+
+/* ============================================================
+   4. PRÉCHARGEUR
+   ============================================================ */
+safe('préchargeur', function(){
+  let done = false;
+  function finish(){
+    if(done) return;
+    done = true;
+    document.body.classList.add('is-loaded');
+  }
+  if(document.readyState === 'complete') setTimeout(finish, 350);
+  else window.addEventListener('load', function(){ setTimeout(finish, 350); });
+  setTimeout(finish, 2200); // sécurité : ne jamais bloquer l'accès
+});
+
+/* ============================================================
+   5. CURSEUR PERSONNALISÉ (desktop)
+   ============================================================ */
+safe('curseur', function(){
+  if(!FINE || !ANIM) return;
+  document.documentElement.classList.add('custom-cursor');
+  const ring  = document.getElementById('cursor');
+  const dot   = document.getElementById('cursorDot');
+  const label = document.getElementById('cursorLabel');
+  if(!ring || !dot) return;
+
+  let mx = innerWidth/2, my = innerHeight/2, rx = mx, ry = my;
+
+  document.addEventListener('mousemove', function(e){
+    mx = e.clientX; my = e.clientY;
+    dot.style.transform = 'translate3d(' + mx + 'px,' + my + 'px,0) translate(-50%,-50%)';
+  });
+
+  (function loop(){
+    rx += (mx - rx) * 0.18;
+    ry += (my - ry) * 0.18;
+    ring.style.transform = 'translate3d(' + rx + 'px,' + ry + 'px,0) translate(-50%,-50%)';
+    requestAnimationFrame(loop);
+  })();
+
+  document.addEventListener('mouseover', function(e){
+    const t = e.target instanceof Element ? e.target : null;
+    if(!t) return;
+    const lbl = t.closest('[data-cursor-label]');
+    if(lbl){
+      const dict = translations[currentLangSafe] || translations.fr;
+      label.textContent = dict[lbl.getAttribute('data-cursor-label')] || '';
+      ring.classList.add('is-label'); ring.classList.remove('is-hover');
+    } else if(t.closest('a, button')){
+      ring.classList.add('is-hover'); ring.classList.remove('is-label');
+    }
+  });
+  document.addEventListener('mouseout', function(e){
+    const t = e.target instanceof Element ? e.target : null;
+    if(t && t.closest('a, button, [data-cursor-label]')) ring.classList.remove('is-hover', 'is-label');
+  });
+  document.documentElement.addEventListener('mouseleave', function(){ ring.style.opacity = '0'; dot.style.opacity = '0'; });
+  document.documentElement.addEventListener('mouseenter', function(){ ring.style.opacity = '1'; dot.style.opacity = '1'; });
+});
+// petite passerelle pour lire la langue courante depuis le module curseur
+var currentLangSafe = (function(){ try { return localStorage.getItem('didi-music-lang') || 'fr'; } catch(e){ return 'fr'; } })();
+
+/* ============================================================
+   6. MENU MOBILE
+   ============================================================ */
+safe('menu mobile', function(){
+  if(!navToggleEl || !navLinksEl) return;
+  navToggleEl.addEventListener('click', function(){
+    const isOpen = navLinksEl.classList.toggle('open');
+    navToggleEl.classList.toggle('open', isOpen);
+    navToggleEl.setAttribute('aria-expanded', String(isOpen));
+  });
+  navLinksEl.querySelectorAll('a').forEach(function(link){
+    link.addEventListener('click', function(){
+      navLinksEl.classList.remove('open');
+      navToggleEl.classList.remove('open');
+      navToggleEl.setAttribute('aria-expanded', 'false');
+    });
+  });
+});
+
+/* ============================================================
+   7. REVEAL AU SCROLL
+   ============================================================ */
+safe('révélations', function(){
+  const els = document.querySelectorAll('.reveal');
+  if(!ANIM || !('IntersectionObserver' in window)){
+    els.forEach(function(el){ el.classList.add('is-visible'); });
+    return;
+  }
+  const obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){
+        en.target.classList.add('is-visible');
+        obs.unobserve(en.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  els.forEach(function(el){ obs.observe(el); });
+});
+
+/* ============================================================
+   8. SCROLL SPY (lien actif dans la nav)
+   ============================================================ */
+safe('scroll spy', function(){
+  const sections = document.querySelectorAll('main section[id]');
+  const anchors  = document.querySelectorAll('.nav-links a');
+  if(!('IntersectionObserver' in window)) return;
+  const spy = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){
+        anchors.forEach(function(a){
+          a.classList.toggle('active', a.getAttribute('href') === '#' + en.target.id);
+        });
+      }
+    });
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  sections.forEach(function(s){ spy.observe(s); });
+});
+
+/* ============================================================
+   9. SCROLL UNIFIÉ : progression, nav auto-masquée, parallaxe
+   ============================================================ */
+safe('défilement', function(){
+  const progress    = document.getElementById('progress');
+  const toTop       = document.getElementById('toTop');
+  const ttProg      = document.getElementById('ttProg');
+  const heroContent = document.getElementById('heroContent');
+  const bioBg       = document.getElementById('bioBg');
+  const bioSection  = document.getElementById('bio');
+  const RING = 150.8;
+  let lastY = window.scrollY, ticking = false;
+
+  function onScroll(){
+    const y = window.scrollY;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    const p = max > 0 ? y / max : 0;
+
+    if(progress) progress.style.transform = 'scaleX(' + p + ')';
+    if(ttProg) ttProg.style.strokeDashoffset = String(RING * (1 - p));
+    if(toTop) toTop.classList.toggle('is-visible', y > 600);
+
+    if(navEl && y > 320 && y > lastY && !(navLinksEl && navLinksEl.classList.contains('open'))){
+      navEl.classList.add('nav--hidden');
+    } else if(navEl){
+      navEl.classList.remove('nav--hidden');
+    }
+    lastY = y;
+
+    if(ANIM){
+      if(heroContent && y < innerHeight){
+        heroContent.style.transform = 'translateY(' + (y * 0.25) + 'px)';
+        heroContent.style.opacity = String(Math.max(1 - (y / innerHeight) * 1.15, 0));
+      }
+      if(bioBg && bioSection){
+        const r = bioSection.getBoundingClientRect();
+        const pr = (innerHeight - r.top) / (innerHeight + r.height);
+        bioBg.style.transform = 'translateY(' + ((pr - 0.5) * 130) + 'px)';
+      }
+    }
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', function(){
+    if(!ticking){ requestAnimationFrame(onScroll); ticking = true; }
+  }, { passive: true });
+  onScroll();
+
+  if(toTop) toTop.addEventListener('click', function(){
+    window.scrollTo({ top: 0, behavior: ANIM ? 'smooth' : 'auto' });
+  });
+});
+
+/* ============================================================
+   10. COMPTEURS ANIMÉS
+   ============================================================ */
+safe('compteurs', function(){
+  const counters = document.querySelectorAll('[data-count]');
+  if(!ANIM || !('IntersectionObserver' in window)){
+    counters.forEach(function(el){
+      el.textContent = String(+el.dataset.count).padStart(+(el.dataset.pad || 2), '0');
+    });
+    return;
+  }
+  const cObs = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(!en.isIntersecting) return;
+      cObs.unobserve(en.target);
+      const el = en.target, target = +el.dataset.count, pad = +(el.dataset.pad || 2);
+      const dur = 1200, t0 = performance.now();
+      (function step(t){
+        const k = Math.min((t - t0) / dur, 1);
+        const eased = 1 - Math.pow(1 - k, 3);
+        el.textContent = String(Math.round(target * eased)).padStart(pad, '0');
+        if(k < 1) requestAnimationFrame(step);
+      })(t0);
+    });
+  }, { threshold: 0.5 });
+  counters.forEach(function(el){ cObs.observe(el); });
+});
+
+/* ============================================================
+   11. CARTES 3D — inclinaison + reflet
+   ============================================================ */
+safe('cartes 3D', function(){
+  if(!FINE || !ANIM) return;
+  document.querySelectorAll('[data-tilt]').forEach(function(card){
+    let raf = null;
+    card.addEventListener('mousemove', function(e){
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width  - 0.5;
+      const py = (e.clientY - r.top)  / r.height - 0.5;
+      if(raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(function(){
+        card.style.setProperty('--rx', (-py * 7).toFixed(2) + 'deg');
+        card.style.setProperty('--ry', ( px * 9).toFixed(2) + 'deg');
+        card.style.setProperty('--mx', ((px + 0.5) * 100).toFixed(1) + '%');
+        card.style.setProperty('--my', ((py + 0.5) * 100).toFixed(1) + '%');
+      });
+    });
+    card.addEventListener('mouseleave', function(){
+      if(raf) cancelAnimationFrame(raf);
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+    });
+  });
+});
+
+/* ============================================================
+   12. BOUTONS MAGNÉTIQUES
+   ============================================================ */
+safe('boutons magnétiques', function(){
+  if(!FINE || !ANIM) return;
+  document.querySelectorAll('.magnetic').forEach(function(btn){
+    btn.addEventListener('mousemove', function(e){
+      const r = btn.getBoundingClientRect();
+      const x = e.clientX - r.left - r.width / 2;
+      const y = e.clientY - r.top  - r.height / 2;
+      btn.style.transform = 'translate(' + (x * 0.18) + 'px,' + (y * 0.28) + 'px)';
+    });
+    btn.addEventListener('mouseleave', function(){ btn.style.transform = ''; });
+  });
+});
+
+/* ============================================================
+   13. FOND 3D — terrain en perspective (canvas pur)
+   Grille + lignes verticales + particules + parallaxe souris.
+   Beaucoup plus visible que la version précédente.
+   ============================================================ */
+safe('fond 3D', function(){
+  const canvas = document.getElementById('terrain');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const FOV = 3, DEPTH = 1.25, SPAN = 1.7;
+
+  let W = 0, H = 0, cols = 64, rows = 22, P = null, stars = [], visible = true;
+  let tmx = 0, tmy = 0, smx = 0, smy = 0, last = performance.now();
+
+  function makeStars(){
+    stars = [];
+    const n = Math.round((W * H) / 14000);
+    for(let s = 0; s < n; s++){
+      stars.push({
+        x: Math.random() * W, y: Math.random() * H,
+        s: Math.random() * 1.5 + 0.4,
+        v: Math.random() * 0.010 + 0.003,
+        a: Math.random() * 0.45 + 0.12,
+        p: Math.random() * 6.28
+      });
+    }
+  }
+
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if(W < 640){ cols = 40; rows = 15; } else { cols = 64; rows = 22; }
+    P = new Float32Array(cols * rows * 3);
+    makeStars();
+  }
+
+  function wave(x, z, t){
+    return Math.sin(x * 1.8 + t * 0.7) * 0.14
+         + Math.sin(z * 2.4 - t * 0.5) * 0.11
+         + Math.sin((x + z) * 1.2 + t * 0.9) * 0.09
+         + Math.cos(x * 3.1 - z * 1.4 + t * 0.4) * 0.04;
+  }
+
+  function fog(z){
+    return Math.max(0, Math.min(1, (DEPTH * 1.25 - z) / (DEPTH * 2.2)));
+  }
+
+  // batching par buckets d'opacité (performant)
+  const NB = 6;
+  const segH = [], segV = [];
+  for(let b = 0; b < NB; b++){ segH.push([]); segV.push([]); }
+
+  function render(t, dt){
+    ctx.clearRect(0, 0, W, H);
+
+    // étoiles qui montent doucement
+    for(let s = 0; s < stars.length; s++){
+      const st = stars[s];
+      st.y -= st.v * dt;
+      if(st.y < -4){ st.y = H + 4; st.x = Math.random() * W; }
+      const tw = st.a * (0.65 + 0.35 * Math.sin(t * 1.6 + st.p));
+      ctx.fillStyle = 'rgba(242,241,238,' + tw.toFixed(3) + ')';
+      ctx.fillRect(st.x, st.y, st.s, st.s);
+    }
+
+    // lissage parallaxe souris
+    smx += (tmx - smx) * 0.045;
+    smy += (tmy - smy) * 0.045;
+
+    const scrollInf = Math.min(window.scrollY / Math.max(innerHeight, 1), 1);
+    const a = t * 0.05 + smx * 0.42;                 // rotation Y
+    const b = 0.55 + smy * 0.12 + scrollInf * 0.22;  // tangage X
+    const ca = Math.cos(a), sa = Math.sin(a);
+    const cb = Math.cos(b), sb = Math.sin(b);
+    const cx = W / 2, cy = H * 0.62;
+    const k = Math.min(Math.max(W * 0.34, 300), 640);
+
+    // projection 3D de tous les points
+    for(let j = 0; j < rows; j++){
+      const z = ((j / (rows - 1)) - 0.5) * 2 * DEPTH;
+      for(let i = 0; i < cols; i++){
+        const x = ((i / (cols - 1)) - 0.5) * 2 * SPAN;
+        const y = wave(x, z, t);
+        const x1 = x * ca - z * sa;
+        const z1 = x * sa + z * ca;
+        const y2 = y * cb - z1 * sb;
+        const z2 = y * sb + z1 * cb;
+        const persp = FOV / (FOV + z2);
+        const idx = (j * cols + i) * 3;
+        P[idx]     = cx + x1 * k * persp;
+        P[idx + 1] = cy + y2 * k * persp;
+        P[idx + 2] = z2;
+      }
+    }
+
+    for(let b2 = 0; b2 < NB; b2++){ segH[b2].length = 0; segV[b2].length = 0; }
+
+    // segments horizontaux
+    for(let j = 0; j < rows; j++){
+      for(let i = 0; i < cols - 1; i++){
+        const i0 = (j * cols + i) * 3, i1 = (j * cols + i + 1) * 3;
+        const f = fog((P[i0 + 2] + P[i1 + 2]) / 2);
+        if(f < 0.03) continue;
+        const bk = Math.min(NB - 1, (f * NB) | 0);
+        segH[bk].push(P[i0], P[i0 + 1], P[i1], P[i1 + 1]);
+      }
+    }
+    // segments verticaux (donnent la lecture 3D de la grille)
+    for(let i = 0; i < cols; i++){
+      for(let j = 0; j < rows - 1; j++){
+        const i0 = (j * cols + i) * 3, i1 = ((j + 1) * cols + i) * 3;
+        const f = fog((P[i0 + 2] + P[i1 + 2]) / 2);
+        if(f < 0.03) continue;
+        const bk = Math.min(NB - 1, (f * NB) | 0);
+        segV[bk].push(P[i0], P[i0 + 1], P[i1], P[i1 + 1]);
+      }
+    }
+
+    ctx.lineWidth = 1;
+    for(let b2 = 0; b2 < NB; b2++){
+      const al = (b2 + 0.7) / NB;
+      if(segH[b2].length){
+        ctx.strokeStyle = 'rgba(242,241,238,' + (al * 0.22).toFixed(3) + ')';
+        ctx.beginPath();
+        const arr = segH[b2];
+        for(let q = 0; q < arr.length; q += 4){
+          ctx.moveTo(arr[q], arr[q + 1]);
+          ctx.lineTo(arr[q + 2], arr[q + 3]);
+        }
+        ctx.stroke();
+      }
+      if(segV[b2].length){
+        ctx.strokeStyle = 'rgba(242,241,238,' + (al * 0.10).toFixed(3) + ')';
+        ctx.beginPath();
+        const arr2 = segV[b2];
+        for(let q = 0; q < arr2.length; q += 4){
+          ctx.moveTo(arr2[q], arr2[q + 1]);
+          ctx.lineTo(arr2[q + 2], arr2[q + 3]);
+        }
+        ctx.stroke();
+      }
+    }
+
+    // points — accent sur les crêtes
+    for(let j = 0; j < rows; j++){
+      for(let i = 0; i < cols; i++){
+        const idx = (j * cols + i) * 3;
+        const f = fog(P[idx + 2]);
+        if(f < 0.05) continue;
+        const crest = ((i * 7 + j * 3) % 29) === 0;
+        const s = 1 + f * 1.6;
+        if(crest){
+          ctx.fillStyle = 'rgba(127,154,168,' + (f * 0.95).toFixed(3) + ')';
+          ctx.fillRect(P[idx] - s * 0.9, P[idx + 1] - s * 0.9, s * 1.8, s * 1.8);
+        } else {
+          ctx.fillStyle = 'rgba(242,241,238,' + (f * 0.38).toFixed(3) + ')';
+          ctx.fillRect(P[idx] - s / 2, P[idx + 1] - s / 2, s, s);
+        }
+      }
+    }
+  }
+
+  window.addEventListener('resize', function(){
+    resize();
+    if(!ANIM) render(1.4, 16);
+  });
+  resize();
+
+  window.addEventListener('mousemove', function(e){
+    tmx = (e.clientX / Math.max(innerWidth, 1) - 0.5) * 2;
+    tmy = (e.clientY / Math.max(innerHeight, 1) - 0.5) * 2;
+  });
+
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(es){
+      es.forEach(function(en){ visible = en.isIntersecting; });
+    }).observe(canvas);
+  }
+
+  if(!ANIM){ render(1.4, 16); return; } // image fixe si FX désactivé
+
+  (function loop(now){
+    const dt = Math.min(now - last, 50);
+    last = now;
+    if(visible && !document.hidden) render(now * 0.001, dt);
+    requestAnimationFrame(loop);
+  })(performance.now());
+});
+
+/* ============================================================
+   14. COPIER L'EMAIL
+   ============================================================ */
+safe('copie email', function(){
+  const copyBtn = document.getElementById('copyBtn');
+  const copyFeedback = document.getElementById('copyFeedback');
+  const EMAIL = '14.didi.music@gmail.com';
+  if(!copyBtn) return;
+
+  copyBtn.addEventListener('click', async function(){
+    const lang = (document.documentElement.lang || 'fr');
+    const dict = translations[lang] || translations.fr;
+    try {
+      await navigator.clipboard.writeText(EMAIL);
+    } catch(e) {
+      const tmp = document.createElement('textarea');
+      tmp.value = EMAIL;
+      document.body.appendChild(tmp);
+      tmp.select();
+      document.execCommand('copy');
+      document.body.removeChild(tmp);
+    }
+    if(copyFeedback){
+      copyFeedback.textContent = dict['contact.copied'];
+      setTimeout(function(){ copyFeedback.textContent = ''; }, 2500);
+    }
+  });
+});
+</script>
+</body>
+</html>
