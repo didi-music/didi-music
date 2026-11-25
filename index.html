@@ -327,7 +327,7 @@ html.fx .reveal.is-visible{ opacity: 1; transform: none; }
 /* ============================================
    7. TITRES
    ============================================ */
-.tracks-grid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.tracks-grid{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; }
 .track-card{ background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; }
 .track-card:hover{
   --ty: -8px; border-color: var(--border-strong);
@@ -531,14 +531,221 @@ footer{ border-top: 1px solid var(--border); padding: 48px 0 0; overflow: hidden
 .to-top:hover .tt-arrow{ transform: translateY(-2px); }
 
 /* ============================================
-   13. RESPONSIVE
+   13. WOW EFFECTS — glitch, shimmer, scanlines, spotlight, mystery
+   ============================================ */
+
+/* Scanlines CRT discrètes sur tout le site */
+body::before{
+  content:""; position:fixed; inset:0; z-index:9991; pointer-events:none;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 2px, rgba(255,255,255,.018) 2px, rgba(255,255,255,.018) 3px);
+}
+
+/* Glitch RGB périodique sur la 2e ligne du titre hero */
+body.is-loaded .hero h1 .line:nth-child(2) .line-inner{
+  animation: lineUp 1s var(--ease) .12s forwards, glitchRGB 7s 1.95s infinite;
+}
+@keyframes glitchRGB{
+  0%, 88%, 100% { text-shadow: none; }
+  90% { text-shadow: -2px 0 rgba(255,60,120,.7), 2px 0 rgba(80,220,255,.7); }
+  92% { text-shadow: 3px 0 rgba(255,60,120,.5), -3px 0 rgba(80,220,255,.5); }
+  94% { text-shadow: -1px 0 rgba(255,60,120,.6), 1px 0 rgba(80,220,255,.6); }
+  96% { text-shadow: 1px 0 rgba(255,60,120,.3), -1px 0 rgba(80,220,255,.3); }
+}
+
+/* Spotlight qui suit la souris sur le hero */
+.hero-spotlight{
+  position:absolute; inset:0; z-index:3; pointer-events:none; mix-blend-mode:screen;
+  background: radial-gradient(circle 520px at var(--mx,50%) var(--my,40%), rgba(127,154,168,.22), transparent 62%);
+  transition: background .12s ease;
+}
+
+/* Trail derrière le curseur */
+.cursor-trail{
+  position:fixed; top:0; left:0; z-index:9999; pointer-events:none;
+  width:7px; height:7px; border-radius:50%; background: var(--accent);
+  transform: translate(-50%,-50%);
+  animation: trailFade .6s ease-out forwards;
+}
+@keyframes trailFade{
+  0%{ opacity:.55; transform: translate(-50%,-50%) scale(1); }
+  100%{ opacity:0; transform: translate(-50%,-50%) scale(.15); }
+}
+
+/* Shimmer holographique sur les pochettes */
+.holo-shimmer{
+  position:absolute; inset:0; z-index:2; pointer-events:none;
+  background: linear-gradient(115deg, transparent 35%, rgba(127,154,168,.22) 47%, rgba(242,241,238,.32) 50%, rgba(127,154,168,.22) 53%, transparent 65%);
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  opacity:0;
+}
+.track-card:hover .holo-shimmer{
+  opacity:1;
+  animation: shimmerSweep 1.2s ease-out;
+}
+@keyframes shimmerSweep{
+  0%{ background-position: 100% 0; }
+  100%{ background-position: -100% 0; }
+}
+
+/* Badge NEW pulsant */
+.track-badge.is-new{
+  color: var(--bg); background: var(--accent); border-color: var(--accent);
+  font-weight:700; letter-spacing:.12em;
+  animation: newPulse 2s ease-in-out infinite;
+}
+@keyframes newPulse{
+  0%,100%{ box-shadow: 0 0 0 0 rgba(127,154,168,.55); }
+  50%{ box-shadow: 0 0 0 8px rgba(127,154,168,0); }
+}
+
+/* Fallback pochette HORIZON — ligne d'horizon lumineuse */
+.art-fallback--horizon{
+  background: linear-gradient(180deg, #07070a 0%, #11131a 38%, #1c2230 49%, #11131a 60%, #07070a 100%);
+}
+.art-fallback--horizon::before{
+  content:""; position:absolute; left:-10%; right:-10%; top:50%;
+  height:1px; background: var(--accent);
+  box-shadow: 0 0 18px var(--accent), 0 0 40px rgba(127,154,168,.45);
+  animation: horizonPulse 4s ease-in-out infinite;
+}
+.art-fallback--horizon::after{
+  content:""; position:absolute; left:50%; top:50%;
+  width:90px; height:90px; border-radius:50%;
+  background: radial-gradient(circle, rgba(127,154,168,.55), transparent 70%);
+  transform: translate(-50%,-50%);
+  animation: horizonPulse 4s ease-in-out infinite;
+}
+@keyframes horizonPulse{
+  0%,100%{ opacity:.5; }
+  50%{ opacity:1; }
+}
+.art-fallback--horizon .af-word{
+  position:relative; z-index:2;
+  color: var(--text); text-shadow: 0 0 14px rgba(127,154,168,.5);
+}
+
+/* === NOUVELLE SORTIE MYSTÈRE === */
+.release-card--mystery{
+  background: linear-gradient(135deg, var(--bg-raised), var(--bg-alt));
+  border-color: var(--border-strong);
+  position: relative;
+}
+.release-card--mystery::before{
+  content:""; position:absolute; inset:0; border-radius:6px; pointer-events:none;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 3px, rgba(127,154,168,.03) 3px, rgba(127,154,168,.03) 4px);
+}
+.release-visual--mystery{
+  position:relative; aspect-ratio:1; transform: translateZ(34px); transform-style: preserve-3d;
+  display:grid; place-items:center; overflow:hidden;
+  background: radial-gradient(circle at 50% 50%, #14151a, #07070a 75%);
+  border: 1px solid var(--border); border-radius: 4px;
+}
+.mystery-orb{
+  position:relative; width:78%; aspect-ratio:1;
+  display:grid; place-items:center;
+}
+.mystery-ring{
+  position:absolute; inset:0; border-radius:50%;
+  border: 1px solid var(--border-strong);
+  animation: mysterySpin 9s linear infinite;
+}
+.mystery-ring.r2{ inset:12%; border-color: rgba(127,154,168,.3); animation-duration: 7s; animation-direction: reverse; }
+.mystery-ring.r3{ inset:24%; border-color: rgba(127,154,168,.5); animation-duration: 5s; }
+.mystery-ring.r4{ inset:36%; border-color: rgba(127,154,168,.7); animation-duration: 3.5s; animation-direction: reverse; }
+.mystery-ring::before{
+  content:""; position:absolute; top:-3px; left:50%; width:6px; height:6px;
+  border-radius:50%; background: var(--accent);
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px var(--accent), 0 0 22px rgba(127,154,168,.6);
+}
+@keyframes mysterySpin{ to{ transform: rotate(360deg); } }
+.mystery-core{
+  font-family: var(--font-display); font-size: clamp(3rem, 6vw, 4.6rem);
+  font-weight:700; color: var(--accent);
+  text-shadow: 0 0 24px rgba(127,154,168,.6);
+  animation: mysteryPulse 3s ease-in-out infinite;
+  position: relative; z-index: 2;
+}
+@keyframes mysteryPulse{
+  0%,100%{ opacity:.6; transform: scale(1); }
+  50%{ opacity:1; transform: scale(1.1); }
+}
+.mystery-noise{
+  position:absolute; inset:0; pointer-events:none; opacity:.18;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  animation: noiseShift 1.5s steps(3) infinite;
+}
+@keyframes noiseShift{
+  0%{ transform: translate(0,0); }
+  33%{ transform: translate(-2px,1px); }
+  66%{ transform: translate(1px,-2px); }
+  100%{ transform: translate(0,0); }
+}
+
+/* Titre glitch ??? */
+.mystery-title{
+  font-family: var(--font-display); font-size: clamp(2.2rem, 4vw, 3rem);
+  font-weight:700; color: var(--text);
+  position: relative; letter-spacing: .15em;
+  display: inline-block;
+}
+.mystery-title::before, .mystery-title::after{
+  content: attr(data-text); position:absolute; top:0; left:0; width:100%;
+  overflow: hidden;
+}
+.mystery-title::before{
+  color: rgba(255,60,120,.85);
+  animation: glitchM1 2.4s infinite linear alternate-reverse;
+}
+.mystery-title::after{
+  color: rgba(80,220,255,.85);
+  animation: glitchM2 3.1s infinite linear alternate-reverse;
+}
+@keyframes glitchM1{
+  0%,100%{ transform: translate(0); clip-path: inset(0 0 0 0); }
+  20%{ transform: translate(-2px,1px); clip-path: inset(15% 0 65% 0); }
+  40%{ transform: translate(2px,-1px); clip-path: inset(55% 0 25% 0); }
+  60%{ transform: translate(-1px,2px); clip-path: inset(35% 0 45% 0); }
+  80%{ transform: translate(1px,-2px); clip-path: inset(75% 0 12% 0); }
+}
+@keyframes glitchM2{
+  0%,100%{ transform: translate(0); clip-path: inset(0 0 0 0); }
+  25%{ transform: translate(2px,-1px); clip-path: inset(8% 0 78% 0); }
+  50%{ transform: translate(-2px,1px); clip-path: inset(65% 0 18% 0); }
+  75%{ transform: translate(1px,2px); clip-path: inset(28% 0 58% 0); }
+}
+
+/* Badge "Bientôt" animé pour la sortie mystère */
+.release-badge.is-mystery{
+  color: var(--accent); border-color: var(--accent);
+  animation: newPulse 2s ease-in-out infinite;
+}
+
+/* Désactive les effets wow si FX OFF */
+html.no-anim .hero-spotlight,
+html.no-anim .cursor-trail,
+html.no-anim .holo-shimmer,
+html.no-anim .mystery-ring,
+html.no-anim .mystery-core,
+html.no-anim .mystery-noise,
+html.no-anim .mystery-title::before,
+html.no-anim .mystery-title::after,
+html.no-anim body::before{ animation: none !important; }
+html.no-anim .hero-spotlight{ display: none; }
+
+/* ============================================
+   14. RESPONSIVE
    ============================================ */
 @media (max-width: 980px){
   .tracks-grid{ grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
   .release-card{ grid-template-columns: 1fr; gap: 48px; padding: 40px; }
-  .release-visual{ max-width: 420px; margin: 0 auto; width: 100%; }
+  .release-visual, .release-visual--mystery{ max-width: 420px; margin: 0 auto; width: 100%; }
   .stats{ grid-template-columns: repeat(2, 1fr); }
   .bio-grid{ grid-template-columns: 1fr; gap: 24px; }
+}
+@media (max-width: 760px){
+  .tracks-grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 860px){
   .nav-links{
@@ -652,6 +859,7 @@ footer{ border-top: 1px solid var(--border); padding: 48px 0 0; overflow: hidden
       <span class="marquee-item">Didi-First</span><span class="marquee-sep">///</span>
       <span class="marquee-item">404 Key Not Found</span><span class="marquee-sep">///</span>
       <span class="marquee-item">404 Winter Not Found</span><span class="marquee-sep">///</span>
+      <span class="marquee-item is-accent">HORIZON</span><span class="marquee-sep">///</span>
       <span class="marquee-item">Burst Vinyl</span><span class="marquee-sep">///</span>
       <span class="marquee-item is-accent" data-i18n="marquee.tag">Musique électronique</span><span class="marquee-sep">///</span>
     </div>
@@ -660,6 +868,7 @@ footer{ border-top: 1px solid var(--border); padding: 48px 0 0; overflow: hidden
       <span class="marquee-item">Didi-First</span><span class="marquee-sep">///</span>
       <span class="marquee-item">404 Key Not Found</span><span class="marquee-sep">///</span>
       <span class="marquee-item">404 Winter Not Found</span><span class="marquee-sep">///</span>
+      <span class="marquee-item is-accent">HORIZON</span><span class="marquee-sep">///</span>
       <span class="marquee-item">Burst Vinyl</span><span class="marquee-sep">///</span>
       <span class="marquee-item is-accent" data-i18n="marquee.tag">Musique électronique</span><span class="marquee-sep">///</span>
     </div>
@@ -676,68 +885,92 @@ footer{ border-top: 1px solid var(--border); padding: 48px 0 0; overflow: hidden
         <p class="section-tag">01</p>
         <h2 data-i18n="tracks.title">Titres</h2>
       </div>
-      <p class="lead" data-i18n="tracks.lead">Trois titres, un même geste : pousser le son jusqu'à la limite du signal.</p>
+      <p class="lead" data-i18n="tracks.lead">Quatre titres, un même geste : pousser le son jusqu'à la limite du signal.</p>
     </div>
 
     <div class="tracks-grid">
-      <!-- 01 — Didi-First. Si tu as une image didifirst.png, pose-la à côté du fichier HTML,
-           elle s'affichera automatiquement (sinon, visuel CSS animé de secours). -->
-      <article class="track-card tilt reveal" style="--d:.05s" data-tilt>
-        <a class="track-link" href="https://link.deezer.com/s/34pSwcmLzIhVPiTJIeFI8" target="_blank" rel="noopener noreferrer" aria-label="Didi-First — écouter sur Deezer">
+      <!-- 01 — Didi-First -->
+      <article class="track-card tilt reveal" style="--d:.05s" data-tilt data-cursor-label="cursor.listen">
+        <a class="track-link" href="https://open.spotify.com/intl-fr/track/0q9y7QAuEFkoNgu9kjra5C?si=5d53dba26bdb45f5" target="_blank" rel="noopener noreferrer" aria-label="Didi-First — écouter sur Spotify">
           <div class="track-art">
             <img src="didifirst.png" alt="Pochette — Didi-First" loading="lazy" decoding="async" onerror="this.remove()">
             <div class="art-fallback" aria-hidden="true">
-              <span class="af-num">01</span>
+              <span class="af-word">DIDI<br>FIRST</span>
               <span class="af-eq"><i></i><i></i><i></i><i></i><i></i></span>
             </div>
+            <div class="holo-shimmer" aria-hidden="true"></div>
             <span class="track-badge" data-i18n="track.available">Disponible</span>
             <span class="play-hint"><span>▶</span></span>
           </div>
           <div class="track-meta">
             <div class="tm-top"><span class="track-num">01</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
             <h3 class="track-title">Didi-First</h3>
-            <span class="track-cta" data-i18n="track.listen">Écouter sur Deezer</span>
+            <span class="track-cta" data-i18n="track.listen">Écouter sur Spotify</span>
           </div>
         </a>
       </article>
 
       <!-- 02 — 404 Key Not Found -->
       <article class="track-card tilt reveal" style="--d:.15s" data-tilt data-cursor-label="cursor.listen">
-        <a class="track-link" href="https://link.deezer.com/s/34pSxc1s1ezqb8ZQ8xFCb" target="_blank" rel="noopener noreferrer" aria-label="404 Key Not Found — écouter sur Deezer">
+        <a class="track-link" href="https://open.spotify.com/intl-fr/track/5u613ysB4fMUqkbWvR8WNe?si=b824d618ad6d4ea4" target="_blank" rel="noopener noreferrer" aria-label="404 Key Not Found — écouter sur Spotify">
           <div class="track-art">
             <img src="404keynotfound.png" alt="Pochette — 404 Key Not Found" loading="lazy" decoding="async" onerror="this.remove()">
             <div class="art-fallback" aria-hidden="true">
               <span class="af-num">404</span>
               <span class="af-eq"><i></i><i></i><i></i><i></i><i></i></span>
             </div>
+            <div class="holo-shimmer" aria-hidden="true"></div>
             <span class="track-badge" data-i18n="track.available">Disponible</span>
             <span class="play-hint"><span>▶</span></span>
           </div>
           <div class="track-meta">
             <div class="tm-top"><span class="track-num">02</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
             <h3 class="track-title">404 Key Not Found</h3>
-            <span class="track-cta" data-i18n="track.listen">Écouter sur Deezer</span>
+            <span class="track-cta" data-i18n="track.listen">Écouter sur Spotify</span>
           </div>
         </a>
       </article>
 
-      <!-- 03 — 404 Winter Not Found (à venir) -->
-      <article class="track-card tilt is-soon reveal" style="--d:.25s" data-tilt>
-        <div class="track-link">
+      <!-- 03 — 404 Winter Not Found -->
+      <article class="track-card tilt reveal" style="--d:.25s" data-tilt data-cursor-label="cursor.listen">
+        <a class="track-link" href="https://open.spotify.com/intl-fr/track/6vXvO6sJ0bq9IH1yrQLfr3?si=f199691a15174b19" target="_blank" rel="noopener noreferrer" aria-label="404 Winter Not Found — écouter sur Spotify">
           <div class="track-art">
-            <img src="404winternotfound.png" alt="Pochette — 404 Winter Not Found" loading="lazy" decoding="async" onerror="this.remove()">
+            <img src="404winternotfound.jpg" alt="Pochette — 404 Winter Not Found" loading="lazy" decoding="async" onerror="this.remove()">
             <div class="art-fallback" aria-hidden="true">
               <span class="af-num">404</span>
               <span class="af-eq"><i></i><i></i><i></i><i></i><i></i></span>
             </div>
-            <span class="track-badge is-soon" data-i18n="track.soon">Bientôt disponible</span>
+            <div class="holo-shimmer" aria-hidden="true"></div>
+            <span class="track-badge" data-i18n="track.available">Disponible</span>
+            <span class="play-hint"><span>▶</span></span>
           </div>
           <div class="track-meta">
-            <div class="tm-top"><span class="track-num">03</span></div>
+            <div class="tm-top"><span class="track-num">03</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
             <h3 class="track-title">404 Winter Not Found</h3>
-            <span class="track-cta" data-i18n="track.soonShort">Bientôt</span>
+            <span class="track-cta" data-i18n="track.listen">Écouter sur Spotify</span>
           </div>
-        </div>
+        </a>
+      </article>
+
+      <!-- 04 — HORIZON (NOUVEAU) -->
+      <article class="track-card tilt reveal" style="--d:.35s" data-tilt data-cursor-label="cursor.listen">
+        <a class="track-link" href="https://open.spotify.com/intl-fr/track/1crTTLbg9KfDu33r5k9pew?si=a14ab9ee3e914a86" target="_blank" rel="noopener noreferrer" aria-label="HORIZON — écouter sur Spotify">
+          <div class="track-art">
+            <img src="horizon.png" alt="Pochette — HORIZON" loading="lazy" decoding="async" onerror="this.remove()">
+            <div class="art-fallback art-fallback--horizon" aria-hidden="true">
+              <span class="af-word">HORI<br>ZON</span>
+              <span class="af-eq"><i></i><i></i><i></i><i></i><i></i></span>
+            </div>
+            <div class="holo-shimmer" aria-hidden="true"></div>
+            <span class="track-badge is-new">NEW</span>
+            <span class="play-hint"><span>▶</span></span>
+          </div>
+          <div class="track-meta">
+            <div class="tm-top"><span class="track-num">04</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+            <h3 class="track-title">HORIZON</h3>
+            <span class="track-cta" data-i18n="track.listen">Écouter sur Spotify</span>
+          </div>
+        </a>
       </article>
     </div>
   </div>
@@ -774,6 +1007,28 @@ footer{ border-top: 1px solid var(--border); padding: 48px 0 0; overflow: hidden
         </div>
       </div>
     </div>
+
+    <!-- NOUVELLE SORTIE MYSTÈRE — placeholder glitchy 3D -->
+    <div class="release-card release-card--mystery tilt reveal" style="--d:.2s" data-tilt>
+      <div class="release-visual release-visual--mystery">
+        <div class="mystery-orb" aria-hidden="true">
+          <div class="mystery-ring r1"></div>
+          <div class="mystery-ring r2"></div>
+          <div class="mystery-ring r3"></div>
+          <div class="mystery-ring r4"></div>
+          <div class="mystery-core">?</div>
+        </div>
+        <div class="mystery-noise" aria-hidden="true"></div>
+      </div>
+      <div class="release-info">
+        <span class="release-badge is-mystery" data-i18n="releases.mysteryBadge">Bientôt — Nouvelle sortie</span>
+        <h3 class="mystery-title" data-text="???">???</h3>
+        <p class="release-desc" data-i18n="releases.mysteryDesc">Une nouvelle sortie est en préparation. Titre et pochette à venir. En attendant, laissez les anneaux tourner.</p>
+        <div class="release-actions">
+          <button type="button" class="btn btn-ghost magnetic is-disabled" disabled data-i18n="releases.mysteryCta">Bientôt disponible</button>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -789,13 +1044,13 @@ footer{ border-top: 1px solid var(--border); padding: 48px 0 0; overflow: hidden
         <h2 data-i18n="bio.title">Bio</h2>
       </div>
       <div class="bio-text reveal" style="--d:.1s">
-        <p data-i18n="bio.p1">Didi-Music travaille la musique électronique comme un matériau brut : boucles cassées, silences calculés, textures numériques poussées jusqu'à l'erreur. Son premier titre, Didi-First, pose les bases d'un univers où le glitch devient mélodie. Avec 404 Key Not Found, le projet affine son écriture : rythmes fragmentés, nappes froides, urgence maîtrisée.</p>
-        <p data-i18n="bio.p2">Une suite, 404 Winter Not Found, est en préparation. Parallèlement, Didi-Music rejoint deux autres artistes sur Burst Vinyl, un album collectif pensé comme un dialogue entre trois univers sonores distincts. Le projet avance titre après titre, sans esbroufe, avec l'idée simple qu'une bonne piste doit d'abord tenir sur une seule écoute.</p>
+        <p data-i18n="bio.p1">Didi-Music travaille la musique électronique comme un matériau brut : boucles cassées, silences calculés, textures numériques poussées jusqu'à l'erreur. Son premier titre, Didi-First, pose les bases d'un univers où le glitch devient mélodie. Avec 404 Key Not Found puis 404 Winter Not Found, le projet affine son écriture : rythmes fragmentés, nappes froides, urgence maîtrisée. HORIZON ouvre un nouveau cap, plus large, plus lumineux.</p>
+        <p data-i18n="bio.p2">Parallèlement, Didi-Music a rejoint deux autres artistes sur Burst Vinyl, un album collectif pensé comme un dialogue entre trois univers sonores distincts. Une nouvelle sortie est en préparation. Le projet avance titre après titre, sans esbroufe, avec l'idée simple qu'une bonne piste doit d'abord tenir sur une seule écoute.</p>
       </div>
     </div>
 
     <div class="stats reveal" style="--d:.15s">
-      <div class="stat"><span class="stat-num" data-count="3" data-pad="2">00</span><span class="stat-label" data-i18n="stats.tracks">titres au catalogue</span></div>
+      <div class="stat"><span class="stat-num" data-count="4" data-pad="2">00</span><span class="stat-label" data-i18n="stats.tracks">titres au catalogue</span></div>
       <div class="stat"><span class="stat-num" data-count="1" data-pad="2">00</span><span class="stat-label" data-i18n="stats.album">album collectif</span></div>
       <div class="stat"><span class="stat-num" data-count="1" data-pad="2">00</span><span class="stat-label" data-i18n="stats.soon">en préparation</span></div>
       <div class="stat"><span class="stat-num">∞</span><span class="stat-label" data-i18n="stats.errors">erreurs assumées</span></div>
@@ -825,7 +1080,7 @@ footer{ border-top: 1px solid var(--border); padding: 48px 0 0; overflow: hidden
       <div class="contact-actions">
         <button type="button" class="btn btn-ghost magnetic" id="copyBtn" data-i18n="contact.copy">Copier l'adresse</button>
         <a href="mailto:14.didi.music@gmail.com" class="btn btn-primary magnetic" data-i18n="contact.mail">Écrire un email</a>
-        <a href="https://www.deezer.com/fr/artist/385104591" target="_blank" rel="noopener noreferrer" class="btn btn-ghost magnetic" data-i18n="contact.deezer">Écouter sur Deezer</a>
+        <a href="https://open.spotify.com/search/Didi-Music" target="_blank" rel="noopener noreferrer" class="btn btn-ghost magnetic" data-i18n="contact.spotify">Écouter sur Spotify</a>
       </div>
     </div>
   </div>
@@ -908,18 +1163,21 @@ const translations = {
     'marquee.tag': 'Musique électronique',
 
     'tracks.title': 'Titres',
-    'tracks.lead': "Trois titres, un même geste : pousser le son jusqu'à la limite du signal.",
+    'tracks.lead': "Quatre titres, un même geste : pousser le son jusqu'à la limite du signal.",
     'track.available': 'Disponible', 'track.soon': 'Bientôt disponible', 'track.soonShort': 'Bientôt',
-    'track.listen': 'Écouter sur Deezer',
+    'track.listen': 'Écouter sur Spotify',
 
-    'releases.title': 'Sorties', 'releases.lead': 'Un album collectif, pensé à plusieurs voix.',
+    'releases.title': 'Sorties', 'releases.lead': 'Un album collectif et une nouvelle sortie à venir.',
     'releases.badge': 'Album — 3 artistes',
     'releases.desc': "Burst Vinyl réunit trois artistes autour d'un même disque, chacun apportant sa propre lecture de la musique électronique. Didi-Music y signe une contribution entre rigueur rythmique et textures abîmées.",
     'releases.cta1': "Écouter l'album", 'releases.cta2': 'Voir la page artiste',
+    'releases.mysteryBadge': 'Bientôt — Nouvelle sortie',
+    'releases.mysteryDesc': "Une nouvelle sortie est en préparation. Titre et pochette à venir. En attendant, laissez les anneaux tourner.",
+    'releases.mysteryCta': 'Bientôt disponible',
 
     'bio.title': 'Bio',
-    'bio.p1': "Didi-Music travaille la musique électronique comme un matériau brut : boucles cassées, silences calculés, textures numériques poussées jusqu'à l'erreur. Son premier titre, Didi-First, pose les bases d'un univers où le glitch devient mélodie. Avec 404 Key Not Found, le projet affine son écriture : rythmes fragmentés, nappes froides, urgence maîtrisée.",
-    'bio.p2': "Une suite, 404 Winter Not Found, est en préparation. Parallèlement, Didi-Music rejoint deux autres artistes sur Burst Vinyl, un album collectif pensé comme un dialogue entre trois univers sonores distincts. Le projet avance titre après titre, sans esbroufe, avec l'idée simple qu'une bonne piste doit d'abord tenir sur une seule écoute.",
+    'bio.p1': "Didi-Music travaille la musique électronique comme un matériau brut : boucles cassées, silences calculés, textures numériques poussées jusqu'à l'erreur. Son premier titre, Didi-First, pose les bases d'un univers où le glitch devient mélodie. Avec 404 Key Not Found puis 404 Winter Not Found, le projet affine son écriture : rythmes fragmentés, nappes froides, urgence maîtrisée. HORIZON ouvre un nouveau cap, plus large, plus lumineux.",
+    'bio.p2': "Parallèlement, Didi-Music a rejoint deux autres artistes sur Burst Vinyl, un album collectif pensé comme un dialogue entre trois univers sonores distincts. Une nouvelle sortie est en préparation. Le projet avance titre après titre, sans esbroufe, avec l'idée simple qu'une bonne piste doit d'abord tenir sur une seule écoute.",
 
     'stats.tracks': 'titres au catalogue', 'stats.album': 'album collectif',
     'stats.soon': 'en préparation', 'stats.errors': 'erreurs assumées',
@@ -927,7 +1185,7 @@ const translations = {
     'contact.title': 'Contact', 'contact.lead': 'Pour bookings, remix, collaborations ou simplement dire bonjour.',
     'contact.available': 'Disponible pour projets',
     'contact.copy': "Copier l'adresse", 'contact.copied': 'Adresse copiée',
-    'contact.mail': 'Écrire un email', 'contact.deezer': 'Écouter sur Deezer',
+    'contact.mail': 'Écrire un email', 'contact.spotify': 'Écouter sur Spotify',
 
     'footer.copy': '© 2026 Didi-Music. Tous droits réservés.',
     'cursor.listen': 'Écouter',
@@ -947,18 +1205,21 @@ const translations = {
     'marquee.tag': 'Electronic music',
 
     'tracks.title': 'Tracks',
-    'tracks.lead': 'Three tracks, one gesture: pushing sound to the edge of the signal.',
+    'tracks.lead': 'Four tracks, one gesture: pushing sound to the edge of the signal.',
     'track.available': 'Available', 'track.soon': 'Coming soon', 'track.soonShort': 'Soon',
-    'track.listen': 'Listen on Deezer',
+    'track.listen': 'Listen on Spotify',
 
-    'releases.title': 'Releases', 'releases.lead': 'A collective album, built with several voices.',
+    'releases.title': 'Releases', 'releases.lead': 'A collective album and a new release coming soon.',
     'releases.badge': 'Album — 3 artists',
     'releases.desc': 'Burst Vinyl brings three artists together on one record, each bringing their own take on electronic music. Didi-Music contributes a track built on rhythmic precision and worn-out textures.',
     'releases.cta1': 'Listen to the album', 'releases.cta2': 'View artist page',
+    'releases.mysteryBadge': 'Coming — New release',
+    'releases.mysteryDesc': 'A new release is in the works. Title and cover to come. Meanwhile, let the rings spin.',
+    'releases.mysteryCta': 'Coming soon',
 
     'bio.title': 'Bio',
-    'bio.p1': 'Didi-Music treats electronic music as raw material: broken loops, calculated silences, digital textures pushed to the point of error. The first track, Didi-First, lays the groundwork for a world where the glitch becomes melody. With 404 Key Not Found, the project sharpens its writing: fragmented rhythms, cold pads, controlled urgency.',
-    'bio.p2': 'A follow-up, 404 Winter Not Found, is in the works. Alongside solo output, Didi-Music joins two other artists on Burst Vinyl, a collective album built as a dialogue between three distinct sonic worlds. The project moves forward track by track, with the simple idea that a good track should hold up on a single listen.',
+    'bio.p1': 'Didi-Music treats electronic music as raw material: broken loops, calculated silences, digital textures pushed to the point of error. The first track, Didi-First, lays the groundwork for a world where the glitch becomes melody. With 404 Key Not Found and then 404 Winter Not Found, the project sharpens its writing: fragmented rhythms, cold pads, controlled urgency. HORIZON opens a new, wider, brighter horizon.',
+    'bio.p2': 'Alongside solo output, Didi-Music has joined two other artists on Burst Vinyl, a collective album built as a dialogue between three distinct sonic worlds. A new release is in the works. The project moves forward track by track, with the simple idea that a good track should hold up on a single listen.',
 
     'stats.tracks': 'tracks in catalogue', 'stats.album': 'collective album',
     'stats.soon': 'in the works', 'stats.errors': 'errors embraced',
@@ -966,7 +1227,7 @@ const translations = {
     'contact.title': 'Contact', 'contact.lead': 'For bookings, remixes, collaborations, or just to say hello.',
     'contact.available': 'Open for projects',
     'contact.copy': 'Copy address', 'contact.copied': 'Address copied',
-    'contact.mail': 'Send an email', 'contact.deezer': 'Listen on Deezer',
+    'contact.mail': 'Send an email', 'contact.spotify': 'Listen on Spotify',
 
     'footer.copy': '© 2026 Didi-Music. All rights reserved.',
     'cursor.listen': 'Listen',
@@ -1087,6 +1348,12 @@ safe('curseur', function(){
       ring.classList.add('is-label'); ring.classList.remove('is-hover');
     } else if(t.closest('a, button')){
       ring.classList.add('is-hover'); ring.classList.remove('is-label');
+      label.textContent = '';
+    } else {
+      // FIX : remet systématiquement à zéro quand la souris n'est plus
+      // sur un élément interactif ou labellisé → fini le curseur bloqué en mode "Écouter".
+      ring.classList.remove('is-hover', 'is-label');
+      label.textContent = '';
     }
   });
   document.addEventListener('mouseout', function(e){
@@ -1500,6 +1767,73 @@ safe('copie email', function(){
       setTimeout(function(){ copyFeedback.textContent = ''; }, 2500);
     }
   });
+});
+
+/* ============================================================
+   15. TRAIL CURSEUR — petites particules qui suivent la souris
+   ============================================================ */
+safe('trail curseur', function(){
+  if(!FINE || !ANIM) return;
+  let lastTrail = 0;
+  document.addEventListener('mousemove', function(e){
+    const now = performance.now();
+    if(now - lastTrail < 35) return;
+    lastTrail = now;
+    const dot = document.createElement('div');
+    dot.className = 'cursor-trail';
+    dot.style.left = e.clientX + 'px';
+    dot.style.top  = e.clientY + 'px';
+    document.body.appendChild(dot);
+    setTimeout(function(){ if(dot.parentNode) dot.parentNode.removeChild(dot); }, 620);
+  }, { passive: true });
+});
+
+/* ============================================================
+   16. SPOTLIGHT HERO — halo lumineux qui suit la souris
+   ============================================================ */
+safe('spotlight hero', function(){
+  if(!FINE || !ANIM) return;
+  const hero = document.querySelector('.hero');
+  if(!hero) return;
+  const spot = document.createElement('div');
+  spot.className = 'hero-spotlight';
+  hero.appendChild(spot);
+  let raf = null, mx = 50, my = 40;
+  hero.addEventListener('mousemove', function(e){
+    const r = hero.getBoundingClientRect();
+    mx = ((e.clientX - r.left) / r.width * 100);
+    my = ((e.clientY - r.top) / r.height * 100);
+    if(raf) return;
+    raf = requestAnimationFrame(function(){
+      spot.style.setProperty('--mx', mx.toFixed(1) + '%');
+      spot.style.setProperty('--my', my.toFixed(1) + '%');
+      raf = null;
+    });
+  });
+  hero.addEventListener('mouseleave', function(){
+    spot.style.setProperty('--mx', '50%');
+    spot.style.setProperty('--my', '40%');
+  });
+});
+
+/* ============================================================
+   17. GLITCH CLIC — petit flash RGB au clic (touche finale wow)
+   ============================================================ */
+safe('glitch clic', function(){
+  if(!ANIM) return;
+  document.addEventListener('click', function(e){
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:8px; height:8px; border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); background:var(--accent); box-shadow:0 0 0 0 rgba(127,154,168,.6); animation:clickFlash .6s ease-out forwards;';
+    document.body.appendChild(flash);
+    setTimeout(function(){ if(flash.parentNode) flash.parentNode.removeChild(flash); }, 620);
+  }, { passive: true });
+  // Injecte l'animation clickFlash si pas déjà dans le CSS
+  if(!document.getElementById('clickFlashStyle')){
+    const s = document.createElement('style');
+    s.id = 'clickFlashStyle';
+    s.textContent = '@keyframes clickFlash{ 0%{opacity:1; transform:translate(-50%,-50%) scale(1); box-shadow:0 0 0 0 rgba(127,154,168,.6);} 100%{opacity:0; transform:translate(-50%,-50%) scale(3.5); box-shadow:0 0 0 14px rgba(127,154,168,0);} }';
+    document.head.appendChild(s);
+  }
 });
 </script>
 </body>
